@@ -183,30 +183,8 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
 .fechapair select.mes{flex:1.35 1 0}
 .fechapair select.anio{flex:1 1 0}
 
-/* ayuda con IA */
+/* barra de ayuda debajo de los campos largos */
 .aibar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
-.aibtn{background:#fff;border:1.5px solid var(--fucsia);color:var(--fucsia-dark);border-radius:999px;
-  padding:6px 14px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
-.aibtn:hover:not(:disabled){background:var(--fucsia);color:#fff}
-.aibtn:disabled{opacity:.55;cursor:progress}
-.aibtn .sp{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;
-  border-radius:50%;display:none;animation:spin .7s linear infinite}
-.aibtn.load .sp{display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.aipanel{border:1.5px solid var(--fucsia-pale);background:var(--surface-2);border-radius:12px;
-  padding:14px;margin-top:9px}
-.aipanel .aihead{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--fucsia-dark);
-  font-weight:600;margin-bottom:10px}
-.aiopt{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-bottom:9px}
-.aiopt p{margin:0 0 9px;font-size:14.5px;line-height:1.5}
-.aiopt .why{font-size:13px;color:var(--ink-soft);margin:0 0 9px}
-.aiopt .btn{padding:8px 15px;font-size:13.5px}
-.aikey{margin-top:10px}
-.aikey p{font-size:13.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.5}
-.aikey .inlineadd input{font-size:14px}
-.aierr{font-size:13.5px;color:var(--brick);background:var(--brick-pale);border-radius:8px;
-  padding:9px 11px;margin-top:8px}
-
 .example{margin:0 0 26px}
 .example > summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--fucsia-dark);
   padding:9px 13px;background:var(--fucsia-pale);border-radius:var(--r);list-style:none;display:inline-block}
@@ -251,6 +229,9 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
 /* ============================================================ PANEL DE LA HOJA */
 .paperTools{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .paperTools .lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+.zoombtn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;
+  font-size:13.5px;font-weight:600;color:var(--ink)}
+.zoombtn[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
 .fitpill{margin-left:auto;font-size:13px;padding:5px 12px;border-radius:999px;font-weight:600}
 .fitpill.ok{background:var(--fucsia-pale);color:var(--fucsia-dark)}
 .fitpill.over{background:var(--brick-pale);color:var(--brick)}
@@ -406,6 +387,7 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
       <div class="paperTools">
         <span class="lbl">Tu CV</span>
         <button class="closepaper" id="closePaper">Volver a editar</button>
+        <button class="zoombtn" id="zoomBtn" aria-pressed="false">Ampliar</button>
         <span class="fitpill ok" id="fitPill">Entra en una página</span>
       </div>
 
@@ -437,6 +419,8 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
    En Claude usa window.storage; deployado usa localStorage.
    ============================================================ */
 const KEY = "armar-mi-cv:v2";
+/* la ayuda con IA ya no existe: borramos la clave que hubiera quedado guardada */
+try{ localStorage.removeItem("armar-mi-cv:apikey"); }catch(e){}
 const store = {
   async get(){
     try{ if(window.storage){ const r = await window.storage.get(KEY); return r && r.value; } }catch(e){}
@@ -635,140 +619,6 @@ function procesarFoto(file){
   });
 }
 
-/* ============================================================
-   AYUDA CON IA
-   En Claude la API responde sin clave. Deployado, hace falta una
-   clave propia de Anthropic, que se guarda solo en este navegador.
-   ============================================================ */
-const AI_KEY_STORE = "armar-mi-cv:apikey";
-let aiKey = null;
-try{ aiKey = localStorage.getItem(AI_KEY_STORE); }catch(e){}
-
-async function llamarIA(prompt){
-  const headers = {"Content-Type":"application/json"};
-  if(aiKey){
-    headers["x-api-key"] = aiKey;
-    headers["anthropic-version"] = "2023-06-01";
-    headers["anthropic-dangerous-direct-browser-access"] = "true";
-  }
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method:"POST", headers,
-    body: JSON.stringify({
-      model:"claude-sonnet-4-6",
-      max_tokens:1000,
-      messages:[{role:"user", content:prompt}]
-    })
-  });
-  if(!res.ok){
-    if(res.status===401 || res.status===403) throw new Error("clave");
-    throw new Error("No se pudo conectar. Probá de nuevo en un momento.");
-  }
-  const data = await res.json();
-  const txt = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
-  const limpio = txt.replace(/```json|```/g,"").trim();
-  try{ return JSON.parse(limpio); }
-  catch(e){
-    const m = limpio.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-    if(m) return JSON.parse(m[0]);
-    throw new Error("La respuesta llegó en un formato inesperado. Probá de nuevo.");
-  }
-}
-
-const REGLAS_IA = `Reglas del CV argentino para primer empleo:
-- Español rioplatense (voseo), tono directo y sobrio.
-- Cada frase arranca con un verbo en primera persona del pasado (Atendí, Coordiné, Organicé).
-- Nunca "fui responsable de", "mis tareas eran", "a cargo de".
-- Incluí un número concreto cuando el dato original lo permita. NUNCA inventes cifras que la persona no dio.
-- No agregues logros, herramientas ni datos que no estén en el texto original.
-- Sin adjetivos vacíos (proactivo, dinámico, trabajo en equipo).
-- Máximo 28 palabras por frase.`;
-
-function promptBloque(texto, tipo, puesto, org){
-  return `Sos quien ayuda a mejorar el CV de alguien que busca su primer trabajo en Argentina.
-
-${REGLAS_IA}
-
-Contexto: ${({trabajo:"trabajo",pasantia:"pasantía",voluntariado:"voluntariado",proyecto:"proyecto propio"})[tipo]}${puesto?" como "+puesto:""}${org?" en "+org:""}.
-
-Frases originales (una por renglón):
-"""
-${texto}
-"""
-
-Devolvé EXACTAMENTE 3 versiones mejoradas del bloque completo, distintas entre sí. Cada versión mantiene la misma cantidad de renglones que el original, separados por un salto de línea, sin guiones ni viñetas al principio. Respondé SOLO con un array JSON, sin backticks ni texto previo, con este formato:
-[{"texto":"renglón 1\\nrenglón 2","por_que":"en menos de 12 palabras, qué cambiaste"}]`;
-}
-
-function promptPerfil(texto, ctx){
-  return `Sos quien ayuda a mejorar el CV de alguien que busca su primer trabajo en Argentina.
-
-${REGLAS_IA}
-Además, para el perfil: entre 40 y 70 palabras, tres partes en este orden — qué estudia o hace, qué sabe hacer, qué está buscando.
-
-Datos que ya cargó la persona: ${ctx || "ninguno"}.
-
-Perfil original: "${texto}"
-
-Devolvé EXACTAMENTE 3 versiones mejoradas, distintas entre sí. Respondé SOLO con un array JSON, sin backticks ni texto previo, con este formato:
-[{"texto":"el perfil mejorado","por_que":"en menos de 12 palabras, qué cambiaste"}]`;
-}
-
-function contextoPerfil(){
-  const partes = [];
-  const edu = S.edu.filter(e=>e.titulo.trim());
-  if(edu.length) partes.push("estudia " + edu.map(e=>e.titulo+(e.estado==="En curso"?" (en curso)":"")).join(", "));
-  const exp = S.exp.filter(e=>e.puesto.trim());
-  if(exp.length) partes.push("experiencia como " + exp.map(e=>e.puesto+(e.org?" en "+e.org:"")).join(", "));
-  if(S.habilidades.length) partes.push("maneja " + S.habilidades.join(", "));
-  return partes.join("; ");
-}
-
-function pedirClaveHTML(){
-  return '<div class="aikey"><p>Para usar la ayuda con IA hace falta una clave de Anthropic. '+
-    'Se guarda solo en este navegador y nunca se envía a otro lado. '+
-    'La sacás en <b>console.anthropic.com</b>, en la sección API Keys.</p>'+
-    '<div class="inlineadd"><input type="password" id="aiKeyInput" placeholder="sk-ant-..." autocomplete="off">'+
-    '<button id="aiKeySave">Guardar</button></div></div>';
-}
-
-/* panel de IA reutilizable: pinta resultados y engancha los botones */
-async function correrIA(panelId, btn, prompt, alAplicar){
-  const panel = document.getElementById(panelId);
-  btn.disabled = true; btn.classList.add("load");
-  panel.innerHTML = '<div class="aihead">Pensando tres versiones…</div>';
-  try{
-    const ops = await llamarIA(prompt);
-    const lista = Array.isArray(ops) ? ops : (ops.opciones || []);
-    if(!lista.length) throw new Error("No devolvió sugerencias. Probá de nuevo.");
-    panel.innerHTML = '<div class="aihead">Elegí la que más te guste</div>' +
-      lista.slice(0,3).map((o,i)=>
-        '<div class="aiopt"><p>'+esc(o.texto||"")+'</p>'+
-        (o.por_que?'<p class="why">→ '+esc(o.por_que)+'</p>':'')+
-        '<button class="btn primary" data-aiuse="'+i+'">Usar esta</button></div>').join("") +
-      '<button class="aibtn" data-aiclose="1">Cerrar</button>';
-    panel.querySelectorAll("[data-aiuse]").forEach(b=>{
-      b.onclick = ()=>{ alAplicar(lista[+b.dataset.aiuse].texto||""); panel.innerHTML=""; };
-    });
-    panel.querySelector("[data-aiclose]").onclick = ()=>{ panel.innerHTML=""; };
-  }catch(err){
-    if(err.message==="clave"){
-      panel.innerHTML = '<div class="aihead">Falta la clave</div>' + pedirClaveHTML();
-      const inp = panel.querySelector("#aiKeyInput");
-      panel.querySelector("#aiKeySave").onclick = ()=>{
-        const v = (inp.value||"").trim();
-        if(!v) return;
-        aiKey = v;
-        try{ localStorage.setItem(AI_KEY_STORE, v); }catch(e){}
-        panel.innerHTML = "";
-        btn.click();
-      };
-    }else{
-      panel.innerHTML = '<div class="aierr">'+esc(err.message)+'</div>';
-    }
-  }finally{
-    btn.disabled = false; btn.classList.remove("load");
-  }
-}
 const PASOS = [
   {n:"Contacto",    t:"Cómo te contactan",         lead:"Si esto está mal, no importa lo que digas después. Va todo arriba de todo, en una sola línea."},
   {n:"Perfil",      t:"Quién sos, en tres líneas", lead:"Lo primero que se lee. Decí qué sabés hacer y qué estás buscando, sin adornos."},
@@ -897,10 +747,7 @@ function renderForm(){
     h += '<div class="field"><label for="f-perfil">Tu perfil</label>'+
       '<p class="rule">Tres cosas, en este orden: qué estudiás o hacés, qué sabés hacer bien, qué estás buscando.</p>'+
       '<textarea id="f-perfil" data-c="perfil" placeholder="Estudiante de… con experiencia en… Busco…">'+esc(S.perfil)+'</textarea>'+
-      '<div class="fb" id="fb-perfil"></div>'+
-      '<div class="aibar"><button class="aibtn" id="aiPerfil"><span class="sp"></span>Mejorar con IA</button>'+
-      '<span style="font-size:13px;color:var(--ink-faint)">Escribí algo primero, aunque salga mal.</span></div>'+
-      '<div id="aiPerfilPanel"></div></div>';
+      '<div class="fb" id="fb-perfil"></div></div>';
     h += '<div class="suggest"><div class="lbl">¿No sabés cómo empezar? Tocá un arranque:</div><div class="chips">'+
       [["Estudiante de ","Estudiante de"],["Técnico/a en ","Técnico/a en"],["Recién egresado/a de ","Recién egresado/a"],["Busco mi primer trabajo en ","Primer trabajo"]]
       .map(([v,l])=>'<button class="chip" data-perfilstart="'+esc(v)+'">'+esc(l)+'</button>').join("")+'</div></div>';
@@ -948,9 +795,7 @@ function renderForm(){
         '<div class="lineas" id="lin-'+e.id+'"></div>'+
         '<div class="aibar">'+
           '<button class="assistbtn" data-openf="'+k+'">Ayudame a armar una frase</button>'+
-          '<button class="aibtn" data-aiexp="'+e.id+'"><span class="sp"></span>Mejorar con IA</button>'+
         '</div>'+
-        '<div id="aib-'+e.id+'"></div>'+
         '<div class="formula" id="fm-'+e.id+'" hidden>'+
           '<p class="f-lead">Respondé las tres y la agrego como un renglón nuevo: <b>qué hiciste</b> + <b>sobre qué</b> + <b>cuánto</b>.</p>'+
           '<div class="fline"><span class="fnum">1</span><input data-f="'+k+'" data-fp="a" placeholder="Qué hiciste. Ej: Atendí"></div>'+
@@ -1232,41 +1077,6 @@ function atarEventos(){
   }
   const fd = $("#fotoDel");
   if(fd) fd.onclick = ()=>{ S.foto = ""; renderForm(); renderPreview(); scheduleSave(); };
-
-  /* ayuda con IA */
-  const aiP = $("#aiPerfil");
-  if(aiP){
-    aiP.onclick = ()=>{
-      const t = S.perfil.trim();
-      if(!t){
-        document.getElementById("aiPerfilPanel").innerHTML =
-          '<div class="aierr">Escribí aunque sea una línea. La IA mejora lo que pongas, no inventa tu historia.</div>';
-        return;
-      }
-      correrIA("aiPerfilPanel", aiP, promptPerfil(t, contextoPerfil()), v=>{
-        S.perfil = v;
-        const ta = $("#f-perfil"); if(ta) ta.value = v;
-        refrescarFeedback(); renderPreview(); scheduleSave();
-      });
-    };
-  }
-  c.querySelectorAll("[data-aiexp]").forEach(b=>{
-    b.onclick = ()=>{
-      const id = b.dataset.aiexp;
-      const e = S.exp.find(x=>x.id===id);
-      const t = e.bullets.filter(x=>x.trim()).join("\n");
-      const panelId = "aib-"+id;
-      if(!t){
-        document.getElementById(panelId).innerHTML =
-          '<div class="aierr">Escribí aunque sea algo suelto, como “atendía la caja”. La IA lo mejora, no lo inventa.</div>';
-        return;
-      }
-      correrIA(panelId, b, promptBloque(t, e.tipo, e.puesto, e.org), v=>{
-        e.bullets = String(v).split("\n").map(x=>x.replace(/^[-•·\s]+/,"")).filter(x=>x.trim());
-        sincronizarTextarea(id);
-      });
-    };
-  });
 
   const on = (sel, fn) => c.querySelectorAll(sel).forEach(b => b.onclick = () => fn(b));
   on("[data-addexp]", ()=>{ S.exp.push(blankExp()); renderForm(); renderPreview(); scheduleSave(); });
@@ -1571,6 +1381,8 @@ function renderPreview(){
   medir();
 }
 
+let hojaZoom = false;
+
 function medir(){
   const sheet = $("#sheet"), inner = $("#sheetInner"), scaler = $("#scaler");
   const disponible = 1123 - 56*2;
@@ -1586,13 +1398,22 @@ function medir(){
     pill.textContent = "Entra en una página · "+Math.round((alto/disponible)*100)+"% usado";
   }
 
+  scaler.style.width = "100%";
   const w = scaler.clientWidth || 794;
-  const k = Math.min(1, w/794);
+  const k = hojaZoom ? 1 : Math.min(1, w/794);
   sheet.style.transform = "scale("+k+")";
   scaler.style.height = (sheet.offsetHeight * k) + "px";
+  if(hojaZoom) scaler.style.width = "794px";
 }
 
 /* ============================================================ ARRANQUE */
+$("#zoomBtn").onclick = ()=>{
+  hojaZoom = !hojaZoom;
+  const b = $("#zoomBtn");
+  b.setAttribute("aria-pressed", hojaZoom ? "true" : "false");
+  b.textContent = hojaZoom ? "Ajustar" : "Ampliar";
+  medir();
+};
 $("#mPrev").onclick = ()=>irA(paso-1);
 $("#mNext").onclick = ()=>irA(paso+1);
 $("#mView").onclick = ()=>{ document.body.classList.add("showpaper"); medir(); };
