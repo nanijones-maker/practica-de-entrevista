@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Armá tu CV — constructor guiado</title>
 <meta name="description" content="Constructor de CV guiado paso a paso, con reglas concretas para tu primer currículum. Gratis, sin registro.">
-<meta name="theme-color" content="#1A1A1A">
+<meta name="theme-color" content="#9E1455">
 <meta property="og:title" content="Armá tu CV">
 <meta property="og:description" content="Construí tu CV paso a paso, con reglas claras. Sin registro.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231A1A1A'/%3E%3Crect x='9' y='7' width='14' height='18' rx='2' fill='%23fff'/%3E%3Crect x='12' y='11' width='8' height='1.6' fill='%23C81E6E'/%3E%3Crect x='12' y='15' width='8' height='1.2' fill='%23E8C9D8'/%3E%3Crect x='12' y='18' width='5' height='1.2' fill='%23E8C9D8'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%239E1455'/%3E%3Crect x='9' y='7' width='14' height='18' rx='2' fill='%23fff'/%3E%3Crect x='12' y='11' width='8' height='1.6' fill='%23C81E6E'/%3E%3Crect x='12' y='15' width='8' height='1.2' fill='%23E8C9D8'/%3E%3Crect x='12' y='18' width='5' height='1.2' fill='%23E8C9D8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    TOKENS — la app tiene personalidad; el documento es sobrio
@@ -21,14 +21,16 @@
   --ink:#1A1A1A; --ink-soft:#565656; --ink-faint:#8C8C8C;
   --surface:#FFFFFF; --surface-2:#FFF7FB; --paper:#FFFFFF;
   --fucsia:#C81E6E; --fucsia-dark:#9E1455; --fucsia-pale:#FBDCEA;
+  --rosa:#E9578C; --rosa-pale:#FDEAF1;
   --naranja:#E8590C; --naranja-dark:#C2410C; --naranja-pale:#FFE8D6;
+  --bar:#9E1455;
   --amber:#8F5D10; --amber-pale:#F6EBD6;
   --brick:#9E3427; --brick-pale:#F6E2DE;
   --line:#EBD8E2;
-  --ui:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --display:"Fraunces",Georgia,serif;
-  --doc-serif:"Source Serif 4",Georgia,"Times New Roman",serif;
-  --doc-sans:"Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ui:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  --display:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  --doc-serif:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  --doc-sans:"Montserrat","Helvetica Neue",Helvetica,Arial,sans-serif;
   --r:10px;
 }
 *{box-sizing:border-box}
@@ -41,19 +43,24 @@ input,textarea,select{font-family:inherit;font-size:16px}
 
 /* ============================================================ ESTRUCTURA */
 .app{min-height:100vh;display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;gap:16px;padding:14px 24px;background:var(--ink);color:#fff}
-.brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em}
-.brand span{color:var(--naranja)}
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 24px;background:var(--bar);color:#fff}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.wordmark{display:flex;flex-direction:column;line-height:1;flex:0 0 auto}
+.wordmark b{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.005em}
+.wordmark i{font-style:normal;font-weight:600;font-size:9.5px;letter-spacing:.42em;
+  text-indent:.42em;margin-top:4px;color:var(--rosa-pale)}
+.brand .tool{font-size:13.5px;font-weight:500;color:var(--rosa-pale);padding-left:14px;
+  border-left:1px solid rgba(255,255,255,.28);white-space:nowrap}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.savechip{font-size:13px;color:#F3D3E2;display:flex;align-items:center;gap:7px}
-.savechip i{width:7px;height:7px;border-radius:50%;background:var(--fucsia);display:inline-block}
-.linkbtn{background:none;border:none;color:#F3D3E2;font-size:13px;text-decoration:underline;
+.savechip{font-size:13px;color:#F6DCE8;display:flex;align-items:center;gap:7px}
+.savechip i{width:7px;height:7px;border-radius:50%;background:var(--rosa-pale);display:inline-block}
+.linkbtn{background:none;border:none;color:#F6DCE8;font-size:13px;text-decoration:underline;
   text-underline-offset:3px;padding:6px}
 .linkbtn:hover{color:#fff}
 
-.steps{display:flex;gap:2px;background:var(--ink);padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.steps{display:flex;gap:2px;background:var(--bar);padding:0 16px;overflow-x:auto;scrollbar-width:none}
 .steps::-webkit-scrollbar{display:none}
-.stepbtn{flex:0 0 auto;background:none;border:none;color:#A8A8A8;padding:10px 14px 14px;
+.stepbtn{flex:0 0 auto;background:none;border:none;color:#EFC2D5;padding:10px 14px 14px;
   display:flex;align-items:baseline;gap:8px;border-bottom:3px solid transparent;white-space:nowrap}
 .stepbtn b{font-size:11px;font-variant-numeric:tabular-nums;opacity:.7}
 .stepbtn span{font-size:14px;font-weight:500}
@@ -69,7 +76,7 @@ input,textarea,select{font-family:inherit;font-size:16px}
 /* ============================================================ FORMULARIO */
 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--fucsia-dark);
   font-weight:600;margin-bottom:6px}
-h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,38px);
+h1.stepTitle{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,38px);
   line-height:1.1;letter-spacing:-.02em;margin:0 0 10px}
 .stepLead{color:var(--ink-soft);margin:0 0 24px;max-width:52ch}
 
@@ -208,7 +215,7 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
 
 .score{display:flex;gap:20px;align-items:baseline;padding:20px;background:#fff;
   border:1.5px solid var(--line);border-radius:14px;margin-bottom:22px}
-.score .big{font-family:var(--display);font-size:44px;font-weight:700;line-height:1}
+.score .big{font-family:var(--display);font-size:44px;font-weight:800;line-height:1}
 .score p{margin:0;color:var(--ink-soft);font-size:14.5px}
 .checkitem{display:flex;gap:13px;padding:14px 0;border-top:1px solid var(--line)}
 .checkitem:last-of-type{border-bottom:1px solid var(--line)}
@@ -220,9 +227,9 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
 .checkitem .txt span{font-size:13.8px;color:var(--ink-soft)}
 .checkitem .goto{background:none;border:none;color:var(--fucsia-dark);font-size:13.5px;font-weight:600;
   text-decoration:underline;text-underline-offset:3px;align-self:center;flex:0 0 auto}
-.exportbox{margin-top:28px;padding:22px;background:var(--ink);color:#fff;border-radius:14px}
-.exportbox h3{font-family:var(--display);margin:0 0 6px;font-size:22px}
-.exportbox p{margin:0 0 16px;color:#F3D3E2;font-size:14.5px;max-width:46ch}
+.exportbox{margin-top:28px;padding:22px;background:var(--bar);color:#fff;border-radius:14px}
+.exportbox h3{font-family:var(--display);font-weight:800;margin:0 0 6px;font-size:22px}
+.exportbox p{margin:0 0 16px;color:#F6DCE8;font-size:14.5px;max-width:46ch}
 .exportbox .btn.primary{background:var(--naranja);color:#fff}
 .exportbox .btn.primary:hover{background:var(--naranja-dark)}
 
@@ -331,7 +338,9 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
     border-top:1.5px solid var(--line);padding:11px 14px;padding-bottom:calc(11px + env(safe-area-inset-bottom))}
   .mobilebar .btn{flex:1;padding:13px 8px;text-align:center}
   .topbar{padding:12px 16px}
-  .brand{font-size:18px}
+  .brand{gap:0}
+  .wordmark b{font-size:17px}
+  .brand .tool{display:none}
   .topbar .linkbtn{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -371,7 +380,10 @@ h1.stepTitle{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw
 
 <div class="app">
   <header class="topbar">
-    <div class="brand">Armá tu <span>CV</span></div>
+    <div class="brand">
+      <span class="wordmark"><b>Stay Curious</b><i>Talent</i></span>
+      <span class="tool">Armá tu CV</span>
+    </div>
     <div class="topbar-right">
       <div class="savechip" id="saveChip" aria-live="polite"><i></i> Se guarda solo</div>
       <button class="linkbtn" id="resetBtn">Empezar de nuevo</button>
@@ -841,7 +853,7 @@ function renderForm(){
         '<div class="fb" id="fb-fe-'+e.id+'"></div></div>';
     });
     h += '<button class="addbtn" data-addedu="1">+ Agregar otra formación</button>';
-    h += '<h2 style="font-family:var(--display);font-size:22px;margin:34px 0 6px">Cursos y certificaciones</h2>'+
+    h += '<h2 style="font-family:var(--display);font-weight:800;font-size:22px;margin:34px 0 6px">Cursos y certificaciones</h2>'+
       '<p class="rule" style="margin-bottom:16px">Aunque duren 20 horas y sean online. Si tienen que ver con el puesto, suman.</p>';
     S.cursos.forEach((c2,idx)=>{
       h += '<div class="card"><div class="cardhead"><h3>Curso '+(idx+1)+'</h3>'+
@@ -873,7 +885,7 @@ function renderForm(){
       '<div class="suggest"><div class="lbl">Sugerencias — tocá las que sepas usar:</div>'+
       '<div class="chips" id="habSug"></div></div></div>';
     h += '<div class="note warn"><span class="mark">→</span><span>Evitá “proactivo”, “responsable”, “trabajo en equipo”. Lo dice todo el mundo y no se puede verificar. Si trabajás bien en equipo, que se note en lo que contaste en Experiencia.</span></div>';
-    h += '<h2 style="font-family:var(--display);font-size:22px;margin:34px 0 6px">Idiomas</h2>'+
+    h += '<h2 style="font-family:var(--display);font-weight:800;font-size:22px;margin:34px 0 6px">Idiomas</h2>'+
       '<p class="rule" style="margin-bottom:16px">Poné el nivel real. Te lo pueden probar en la entrevista.</p>';
     S.idiomas.forEach(i=>{
       h += '<div class="row" style="align-items:flex-end">'+
