@@ -457,6 +457,8 @@ const MESES = [
 ];
 const ANIO_ACTUAL = new Date().getFullYear();
 const ANIOS = Array.from({length:41}, (_,i)=>String(ANIO_ACTUAL + 2 - i));
+/* una carrera en curso se termina bastante más adelante: llega hasta ANIO_ACTUAL+9 */
+const ANIOS_ESTUDIO = Array.from({length:48}, (_,i)=>String(ANIO_ACTUAL + 9 - i));
 const mesCorto = v => (MESES.find(m=>m.v===v)||{}).corto || "";
 
 /* selector mes+año reutilizable */
@@ -468,7 +470,7 @@ function selectorFecha(attrs, mes, anio, opts){
   const om = '<option value="">'+etiquetaMes+'</option>' +
     MESES.map(m=>'<option value="'+m.v+'"'+(mes===m.v?" selected":"")+'>'+m.largo+'</option>').join("");
   const oa = '<option value="">'+etiquetaAnio+'</option>' +
-    ANIOS.map(a=>'<option value="'+a+'"'+(anio===a?" selected":"")+'>'+a+'</option>').join("");
+    (opts.anios || ANIOS).map(a=>'<option value="'+a+'"'+(anio===a?" selected":"")+'>'+a+'</option>').join("");
   return '<div class="fechapair">'+
     '<select class="mes" '+attrs+' data-parte="mes" aria-label="Mes"'+dis+'>'+om+'</select>'+
     '<select class="anio" '+attrs+' data-parte="anio" aria-label="Año"'+dis+'>'+oa+'</select></div>';
@@ -830,7 +832,7 @@ function renderForm(){
         selectorFecha('id="edesde-'+e.id+'" data-d="'+e.id+'" data-k="desde"', e.desdeMes, e.desdeAnio)+'</div>'+
         '<div class="field"><label for="ehasta-'+e.id+'">Hasta</label>'+
         '<p class="rule">'+(e.estado==="En curso"?"Si seguís cursando, poné el año estimado.":"Cuándo terminaste.")+'</p>'+
-        selectorFecha('id="ehasta-'+e.id+'" data-d="'+e.id+'" data-k="hasta"', e.hastaMes, e.hastaAnio)+'</div>'+
+        selectorFecha('id="ehasta-'+e.id+'" data-d="'+e.id+'" data-k="hasta"', e.hastaMes, e.hastaAnio, {anios:ANIOS_ESTUDIO})+'</div>'+
         '<div class="field"><label for="est-'+e.id+'">Estado</label>'+
         '<p class="rule">Se muestra al lado del título.</p>'+
         '<select id="est-'+e.id+'" data-d="'+e.id+'" data-k="estado">'+
