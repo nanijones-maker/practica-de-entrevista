@@ -57,6 +57,9 @@ input,textarea,select{font-family:inherit;font-size:16px}
 .linkbtn{background:none;border:none;color:#F6DCE8;font-size:13px;text-decoration:underline;
   text-underline-offset:3px;padding:6px}
 .linkbtn:hover{color:#fff}
+.dlbtn{background:var(--naranja);color:#fff;border:none;border-radius:999px;
+  padding:9px 18px;font-size:14px;font-weight:700;white-space:nowrap}
+.dlbtn:hover{background:var(--naranja-dark)}
 
 .steps{display:flex;gap:2px;background:var(--bar);padding:0 16px;overflow-x:auto;scrollbar-width:none}
 .steps::-webkit-scrollbar{display:none}
@@ -345,6 +348,9 @@ h1.stepTitle{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw
   .wordmark b{font-size:17px}
   .brand .tool{display:none}
   .topbar .linkbtn{display:none}
+  /* el botón de descarga se queda; lo que cede lugar es el aviso de guardado */
+  .topbar .savechip{display:none}
+  .dlbtn{padding:8px 14px;font-size:13.5px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
@@ -390,6 +396,7 @@ h1.stepTitle{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw
     </div>
     <div class="topbar-right">
       <div class="savechip" id="saveChip" aria-live="polite"><i></i> Se guarda solo</div>
+      <button class="dlbtn" id="dlBtn">Descargar CV</button>
       <button class="linkbtn" id="resetBtn">Empezar de nuevo</button>
     </div>
   </header>
@@ -461,6 +468,27 @@ const blankEdu = () => ({id:nid(), titulo:"", inst:"",
   desdeMes:"", desdeAnio:"", hastaMes:"", hastaAnio:"", estado:"En curso"});
 const blankCur = () => ({id:nid(), nombre:"", inst:"", mes:"", anio:""});
 const blankIdi = () => ({id:nid(), idioma:"", nivel:"Intermedio"});
+/* el CV arranca con el idioma que todos comparten; se puede editar o borrar */
+const idiomaBase = () => ({id:nid(), idioma:"Español", nivel:"Nativo"});
+
+/* Nombre en mayúscula inicial.
+   Solo interviene si vino TODO en mayúsculas o TODO en minúsculas: si ya trae
+   mayúsculas propias no lo toca, para no romper "McCarthy" ni "de la Vega". */
+const PARTICULAS = new Set(["de","del","la","las","los","y","e","da","das","do","dos","van","von","di","du","der","den","bin","ibn"]);
+function capitalizarNombre(txt){
+  const t = (txt||"").trim().replace(/\s+/g," ");
+  if(!t) return "";
+  const letras = t.replace(/[^\p{L}]/gu,"");
+  if(!letras) return t;
+  const soloMayus = letras === letras.toUpperCase();
+  const soloMinus = letras === letras.toLowerCase();
+  if(!soloMayus && !soloMinus) return t;
+  const alta = w => w.replace(/^(\p{L})/u, c=>c.toUpperCase())
+                     .replace(/([-'\u2019])(\p{L})/gu, (m,sep,c)=>sep+c.toUpperCase());
+  return t.toLowerCase().split(" ")
+    .map((w,i)=> i>0 && PARTICULAS.has(w) ? w : alta(w))
+    .join(" ");
+}
 
 /* ---- fechas: mes + año en todo el CV ---- */
 const MESES = [
@@ -502,7 +530,7 @@ const ACENTOS = [
 let S = {
   contacto:{nombre:"", mail:"", tel:"", ciudad:"", linkedin:""},
   foto:"",
-  perfil:"", exp:[blankExp()], edu:[blankEdu()], cursos:[], habilidades:[], idiomas:[],
+  perfil:"", exp:[blankExp()], edu:[blankEdu()], cursos:[], habilidades:[], idiomas:[idiomaBase()],
   diseno:{plantilla:"clasico", acento:"#2B3A42", densidad:"comodo"},
   visitados:[0]
 };
@@ -1107,7 +1135,7 @@ function atarEventos(){
   on("[data-delidi]", b=>{ S.idiomas = S.idiomas.filter(x=>x.id!==b.dataset.delidi); renderForm(); renderPreview(); scheduleSave(); });
   on("[data-nav]", b=>irA(paso + (+b.dataset.nav)));
   on("[data-goto]", b=>irA(+b.dataset.goto));
-  on("[data-print]", ()=>window.print());
+  on("[data-print]", descargarPDF);
   on("[data-perfilstart]", b=>{
     const ta = $("#f-perfil");
     if(!ta.value.trim()){ ta.value = b.dataset.perfilstart; S.perfil = ta.value;
@@ -1343,7 +1371,7 @@ function renderPreview(){
   let h = '<div class="doc-head'+(S.foto?" confoto":"")+'">';
   if(S.foto) h += '<img class="doc-foto" src="'+S.foto+'" alt="">';
   h += '<div class="doc-headtxt">';
-  h += '<h1 class="doc-name">'+(C.nombre.trim() ? esc(C.nombre) : '<span class="doc-empty">Tu nombre y apellido</span>')+'</h1>';
+  h += '<h1 class="doc-name">'+(C.nombre.trim() ? esc(capitalizarNombre(C.nombre)) : '<span class="doc-empty">Tu nombre y apellido</span>')+'</h1>';
   const cont = [C.mail, C.tel, C.ciudad, C.linkedin].filter(x=>x && x.trim());
   h += '<p class="doc-contact">'+(cont.length ? cont.map(x=>'<span>'+esc(x.trim())+'</span>').join("")
     : '<span class="doc-empty">mail · teléfono · ciudad</span>')+'</p></div></div>';
@@ -1425,6 +1453,20 @@ function medir(){
 }
 
 /* ============================================================ ARRANQUE */
+/* El navegador usa document.title como nombre sugerido del archivo.
+   El título base se guarda una sola vez: si no, dos clicks seguidos dejan
+   "CV - Nombre" como título original y ya no se puede restaurar. */
+const TITULO_BASE = document.title;
+function descargarPDF(){
+  const nombre = capitalizarNombre(S.contacto.nombre);
+  document.title = nombre ? "CV - " + nombre : "CV";
+  const volver = ()=>{ document.title = TITULO_BASE; };
+  window.addEventListener("afterprint", volver, {once:true});
+  setTimeout(volver, 60000);
+  window.print();
+}
+$("#dlBtn").onclick = descargarPDF;
+
 $("#zoomBtn").onclick = ()=>{
   hojaZoom = !hojaZoom;
   const b = $("#zoomBtn");
@@ -1439,7 +1481,7 @@ $("#closePaper").onclick = ()=>document.body.classList.remove("showpaper");
 $("#resetBtn").onclick = async ()=>{
   if(!confirm("Se borra todo lo que cargaste y volvés a empezar. ¿Seguro?")) return;
   S = {contacto:{nombre:"",mail:"",tel:"",ciudad:"",linkedin:""}, foto:"", perfil:"", exp:[blankExp()],
-       edu:[blankEdu()], cursos:[], habilidades:[], idiomas:[],
+       edu:[blankEdu()], cursos:[], habilidades:[], idiomas:[idiomaBase()],
        diseno:{plantilla:"clasico",acento:"#2B3A42",densidad:"comodo"}, visitados:[0]};
   await store.del();
   aplicarDiseno(); renderDesign(); irA(0);
